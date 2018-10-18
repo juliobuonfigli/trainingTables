@@ -4,32 +4,41 @@ import javax.swing.*;
 import java.awt.event.*;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.Writer;
+import java.util.Random;
 
 import com.opencsv.*;
 
 public class DialogTT extends JFrame implements ActionListener {
 
-  private JTextField  cEntradas, cSalidas, cPorcentaje, cFilas, cInicio, cFin, cColumna, cColumnas;
-  private JLabel eFuente, eDestino, eEntradas, eSalidas, ePorcentaje, eFilas, eInicio, eFin, eColumna, eColumnas, et1, et2;
-  private int Entradas, Salidas, Porcentaje, Filas, Inicio, Fin, Columna, Columnas;
+  private JTextField  cSemilla, cEntradas, cSalidas, cPorcentaje, cFilas, cInicio, cFin, cColumna, cColumnas;
+  private JLabel eSemilla, eFuente, eDestino, eEntradas, eSalidas, ePorcentaje, eFilas, eInicio, eFin, eColumna, eColumnas, et1, et2;
+  private int Semilla, Entradas, Salidas, Filas, Inicio, Fin, Columna, Columnas;
+  private double  Porcentaje;
   private JButton bFuente, bDestino, bAceptar;
-  private Reader rFuente, rDestino;
-  private CSVReader crFuente, crDestino;
+  private File fF, fD;
+  private Reader rF;
+  private Writer wD;
+  private CSVReader crF;
   private CSVReaderBuilder rbF;
-  private CSVWriter wDestino;
+  private CSVWriter cwD;
+  private Random ran;
   private boolean flag=false; 
    
-	 public DialogTT()  
+public DialogTT()  
 		{
 		setLayout(null);
         setTitle("Tabla de entrenamiento");
         //Etiquetas
-        et1=new JLabel("*");
+        et1=new JLabel("");
         et1.setBounds(260,10,10,15);
-        et2=new JLabel("*");
+        add(et1);
+        et2=new JLabel("");
         et2.setBounds(260,30,10,15);
+        add(et2);
         eFuente=new JLabel("CSV fuente: ");
         eFuente.setBounds(10,10,100,15);
         add(eFuente);
@@ -60,11 +69,14 @@ public class DialogTT extends JFrame implements ActionListener {
         eColumnas=new JLabel("Número de columnas: ");
         eColumnas.setBounds(10,190,140,15);
         add(eColumnas);
+        eSemilla=new JLabel("Semilla: ");
+        eSemilla.setBounds(10,210,140,15);
+        add(eSemilla);
         // Campos de texto
-        cEntradas=new JTextField("20");
+        cEntradas=new JTextField("10");
         cEntradas.setBounds(160,50,100,15);
         add(cEntradas);
-        cSalidas=new JTextField("20");
+        cSalidas=new JTextField("5");
         cSalidas.setBounds(160,70,100,15);
         add(cSalidas);
         cPorcentaje=new JTextField("20");
@@ -76,15 +88,18 @@ public class DialogTT extends JFrame implements ActionListener {
         cInicio=new JTextField("20");
         cInicio.setBounds(160,130,100,15);
         add(cInicio);
-        cFin=new JTextField("20");
+        cFin=new JTextField("200");
         cFin.setBounds(160,150,100,15);
         add(cFin);
-        cColumna=new JTextField("20");
+        cColumna=new JTextField("3");
         cColumna.setBounds(160,170,100,15);
         add(cColumna);
-        cColumnas=new JTextField("20");
+        cColumnas=new JTextField("5");
         cColumnas.setBounds(160,190,100,15);
         add(cColumnas);
+        cSemilla=new JTextField("20");
+        cSemilla.setBounds(160,210,100,15);
+        add(cSemilla);
         // Botones
         bFuente=new JButton("Buscar");
         bFuente.setBounds(160,10,90,15);
@@ -95,14 +110,33 @@ public class DialogTT extends JFrame implements ActionListener {
         add(bDestino);
         bDestino.addActionListener(this);
         bAceptar=new JButton("Aceptar");
-        bAceptar.setBounds(10,220,90,15);
+        bAceptar.setBounds(10,240,90,15);
         add(bAceptar);
         bAceptar.addActionListener(this);
 		}
-		
-public Reader setSource(String titulo, JLabel jl)
+
+public double[] norm(double[] ent)
+		{
+		double max=ent[0];
+		double min=ent[0];
+		double[] ret=new double[ent.length];
+		for(int i=1; i<ent.length; i++)
+			{
+			if(ent[i]>max)
+				max=ent[i];
+			}
+		for(int j=1; j<ent.length; j++)
+			{
+			if(ent[j]<min)
+				min=ent[j];
+			}
+		for(int k=0; k<ent.length; k++)
+			ret[k]=(ent[k]-min)/(max-min);
+		return ret;
+		}
+
+public File setArchivo(String titulo, JLabel jl)
 	   {
-	   Reader cr=null;
 	   JFileChooser chooserCSV = new JFileChooser();
        chooserCSV.setCurrentDirectory(new java.io.File("."));
        chooserCSV.setDialogTitle(titulo);
@@ -112,59 +146,105 @@ public Reader setSource(String titulo, JLabel jl)
        int status = chooserCSV.showOpenDialog(null);
        File file = chooserCSV.getSelectedFile();                   
 	   if(status == JFileChooser.APPROVE_OPTION) 
-			{
-		    add(jl);
-		    try
-				{
-                cr = new FileReader(file); 
-               	}
-            catch(IOException c) 
-				{
-                System.out.println(c.getMessage());
-				}
-			}
-	   return cr;
+			jl.setText("*");
+	   return file;
 	   }
 
-		@Override
-    public void actionPerformed(ActionEvent e) 
+@Override
+public void actionPerformed(ActionEvent e) 
 		{
-        rFuente=null;
-		if(e.getSource()==bFuente)
-        	rFuente=setSource("Cargar CSV fuente", et1);
+        if(e.getSource()==bFuente)
+			{
+			fF=setArchivo("Cargar CSV fuente", et1);
+			try {
+	            rF = new FileReader(fF); }
+	        catch(IOException c) {
+	            System.out.println(c.getMessage()); }
+			}
 		if(e.getSource()==bDestino) 
-        	rDestino=setSource("Cargar CSV destino", et2);
+			{
+			fD=setArchivo("Cargar CSV destino", et2);
+			try {
+	            wD = new FileWriter(fD); }
+	        catch(IOException c) {
+	            System.out.println(c.getMessage()); }
+			}
         if(e.getSource()==bAceptar) 
 			{
         	Entradas=Integer.parseInt(cEntradas.getText());
         	Salidas=Integer.parseInt(cSalidas.getText());
-        	Porcentaje=Integer.parseInt(cPorcentaje.getText());
+        	Porcentaje=Double.parseDouble(cPorcentaje.getText());
         	Filas=Integer.parseInt(cFilas.getText());
         	Inicio=Integer.parseInt(cInicio.getText());
         	Columna=Integer.parseInt(cColumna.getText());
         	Fin=Integer.parseInt(cFin.getText());
         	Columnas=Integer.parseInt(cColumnas.getText());
-        	double[][] M1=new double[Filas][Entradas+1];
-        	String[] M2=new String[Fin-Inicio];
-        	String[] M3=new String[Columnas];
-        	rbF=new CSVReaderBuilder(rFuente);
-        	rbF.withSkipLines(Inicio);
-        	crFuente=rbF.build();
-        	for(int i=0; i<Fin-Inicio; i++)
+        	Semilla=Integer.parseInt(cSemilla.getText());
+        	//String[][] M=new String[Filas][Entradas+Salidas+1];
+        	String[] M1=new String[Entradas+1];
+        	String[] Mi=new String[Columnas];
+        	double[] MD=new double[Fin-Inicio+1];
+        	//double[] MD1=new double[Fin-Inicio+1];
+        	double[] MD2=new double[Entradas+Salidas];
+        	rbF=new CSVReaderBuilder(rF);
+        	rbF.withSkipLines(Inicio-1);
+        	crF=rbF.build();
+        	ran=new Random(Semilla);
+           	int in=0;
+        	for(int j=0; j<Fin-Inicio+1; j++)
         		{
         		try{
-        			M3=crFuente.readNext();}
+        			Mi=crF.readNext();}
         		catch(IOException c) {
         			System.out.println(c.getMessage()); }
-        		M2[i]=M3[Columna+1];
+        		MD[j]=Double.parseDouble(Mi[Columna-1]);
         		}
-        	
-        	
-        	//getters and setters
-			flag=true;
-            System.exit(0);
+        	try{
+    			crF.close();}
+    		catch(IOException c) {
+    			System.out.println(c.getMessage()); }
+        	MD=norm(MD);
+        	double sal, comp;
+        	cwD=new CSVWriter(wD);
+        	for(int j=0; j<Filas; j++)
+        		{
+        		in=ran.nextInt((Fin-Inicio)-(Entradas+Salidas));
+        		for(int k=0; k<Entradas+Salidas; k++)
+        			{
+        			MD2[k]=MD[in];
+        			in++;
+        			}
+        		//in=j+1; //comentar esta linea
+        		sal=0.0;
+        		//System.out.println(MD2[Entradas-1]); 
+        		comp=MD2[Entradas-1]*(1+Porcentaje/100);
+        		for(int l=Entradas; l<Entradas+Salidas; l++)
+        			{
+        			if(MD2[l]>comp)
+        				sal=1.0;
+        			}
+        		for(int k=0; k<Entradas; k++)
+        			M1[k]=Double.toString(MD2[k]);
+        		M1[Entradas]=Double.toString(sal);
+        		//M[j]=M1;
+        		try {
+        			cwD.writeNext(M1); }
+	    		catch(Exception ee) {
+	    			System.out.println("...esto no camina"); }
+        		}
+        	/*for(int j=0; j<Filas; j++)
+        		{
+        		try {
+	    			cwD.writeNext(M[j]); }
+	    		catch(Exception ee) {
+	    			System.out.println("...esto no camina"); }
+				}*/
+	        try{
+        		cwD.close();}
+		    catch(Exception ee) {
+		    	System.out.println("...no funka"); }
+        	flag=true;
+        	System.exit(0);
             }
         }
-        	
-		
 }
