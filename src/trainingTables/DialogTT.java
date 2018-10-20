@@ -1,6 +1,9 @@
 package trainingTables;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
 import java.awt.event.*;
 import java.io.File;
 import java.io.FileReader;
@@ -12,13 +15,15 @@ import java.util.Random;
 
 import com.opencsv.*;
 
-public class DialogTT extends JFrame implements ActionListener {
+public class DialogTT extends JFrame implements ActionListener, ChangeListener {
 
   private JTextField  cSemilla, cEntradas, cSalidas, cPorcentaje, cFilas, cInicio, cFin, cColumna, cColumnas;
   private JLabel eSemilla, eFuente, eDestino, eEntradas, eSalidas, ePorcentaje, eFilas, eInicio, eFin, eColumna, eColumnas, et1, et2;
   private int Semilla, Entradas, Salidas, Filas, Inicio, Fin, Columna, Columnas;
   private double  Porcentaje;
   private JButton bFuente, bDestino, bAceptar;
+  private JCheckBox cbLoga, cbNormT, cbNormI, cbPvc;
+  private boolean Loga, NormT, NormI, Pvc;
   private File fF, fD;
   private Reader rF;
   private Writer wD;
@@ -30,6 +35,7 @@ public class DialogTT extends JFrame implements ActionListener {
    
 public DialogTT()  
 		{
+		Loga=NormT=NormI=Pvc=false;
 		setLayout(null);
         setTitle("Tabla de entrenamiento");
         //Etiquetas
@@ -51,7 +57,7 @@ public DialogTT()
         eSalidas=new JLabel("Horizonte: ");
         eSalidas.setBounds(10,70,100,15);
         add(eSalidas);
-        ePorcentaje=new JLabel("Porcentaje");
+        ePorcentaje=new JLabel("Porcentaje: ");
         ePorcentaje.setBounds(10,90,100,15);
         add(ePorcentaje);
         eFilas=new JLabel("Iteraciones: ");
@@ -100,6 +106,19 @@ public DialogTT()
         cSemilla=new JTextField("20");
         cSemilla.setBounds(160,210,100,15);
         add(cSemilla);
+        //CheckBoxes
+        cbLoga=new JCheckBox("Logaritmizar");
+        cbLoga.setBounds(10, 240, 200, 15);
+        cbLoga.addChangeListener(this); add(cbLoga);
+        cbNormT=new JCheckBox("Normalizar todo");
+        cbNormT.setBounds(10, 260, 200, 15);
+        cbNormT.addChangeListener(this); add(cbNormT);
+        cbNormI=new JCheckBox("Normalizar cada entrada");
+        cbNormI.setBounds(10, 280, 200, 15);
+        cbNormI.addChangeListener(this); add(cbNormI);
+        cbPvc=new JCheckBox("Porcentaje constante");
+        cbPvc.setBounds(10, 300, 200, 15);
+        cbPvc.addChangeListener(this); add(cbPvc);
         // Botones
         bFuente=new JButton("Buscar");
         bFuente.setBounds(160,10,90,15);
@@ -110,7 +129,7 @@ public DialogTT()
         add(bDestino);
         bDestino.addActionListener(this);
         bAceptar=new JButton("Aceptar");
-        bAceptar.setBounds(10,240,90,15);
+        bAceptar.setBounds(10,330,90,15);
         add(bAceptar);
         bAceptar.addActionListener(this);
 		}
@@ -151,6 +170,15 @@ public File setArchivo(String titulo, JLabel jl)
 	   }
 
 @Override
+public void stateChanged(ChangeEvent ce) 
+	  {
+	  Loga=cbLoga.isSelected();
+	  NormT=cbNormT.isSelected(); 
+	  NormI=cbNormI.isSelected();
+	  Pvc=cbPvc.isSelected();
+	  }
+
+@Override
 public void actionPerformed(ActionEvent e) 
 		{
         if(e.getSource()==bFuente)
@@ -180,11 +208,9 @@ public void actionPerformed(ActionEvent e)
         	Fin=Integer.parseInt(cFin.getText());
         	Columnas=Integer.parseInt(cColumnas.getText());
         	Semilla=Integer.parseInt(cSemilla.getText());
-        	//String[][] M=new String[Filas][Entradas+Salidas+1];
         	String[] M1=new String[Entradas+1];
         	String[] Mi=new String[Columnas];
         	double[] MD=new double[Fin-Inicio+1];
-        	//double[] MD1=new double[Fin-Inicio+1];
         	double[] MD2=new double[Entradas+Salidas];
         	rbF=new CSVReaderBuilder(rF);
         	rbF.withSkipLines(Inicio-1);
@@ -203,7 +229,13 @@ public void actionPerformed(ActionEvent e)
     			crF.close();}
     		catch(IOException c) {
     			System.out.println(c.getMessage()); }
-        	MD=norm(MD);
+        	if(Loga==true)
+        		{
+        		for(int i=0; i<Fin-Inicio; i++)
+        			MD[i]=Math.log(MD[i]);
+        	   	}
+        	if(NormT==true)
+        		MD=norm(MD);
         	double sal, comp;
         	cwD=new CSVWriter(wD);
         	for(int j=0; j<Filas; j++)
@@ -214,10 +246,13 @@ public void actionPerformed(ActionEvent e)
         			MD2[k]=MD[in];
         			in++;
         			}
-        		//in=j+1; //comentar esta linea
+        		if(NormI==true)
+            		MD2=norm(MD2);
         		sal=0.0;
-        		//System.out.println(MD2[Entradas-1]); 
-        		comp=MD2[Entradas-1]*(1+Porcentaje/100);
+        		if(Pvc==true)
+        			comp=MD2[Entradas-1]+(Porcentaje/100);
+        		else
+        			comp=MD2[Entradas-1]*(1+Porcentaje/100);
         		for(int l=Entradas; l<Entradas+Salidas; l++)
         			{
         			if(MD2[l]>comp)
@@ -226,20 +261,12 @@ public void actionPerformed(ActionEvent e)
         		for(int k=0; k<Entradas; k++)
         			M1[k]=Double.toString(MD2[k]);
         		M1[Entradas]=Double.toString(sal);
-        		//M[j]=M1;
         		try {
         			cwD.writeNext(M1); }
 	    		catch(Exception ee) {
 	    			System.out.println("...esto no camina"); }
         		}
-        	/*for(int j=0; j<Filas; j++)
-        		{
-        		try {
-	    			cwD.writeNext(M[j]); }
-	    		catch(Exception ee) {
-	    			System.out.println("...esto no camina"); }
-				}*/
-	        try{
+        	try{
         		cwD.close();}
 		    catch(Exception ee) {
 		    	System.out.println("...no funka"); }
