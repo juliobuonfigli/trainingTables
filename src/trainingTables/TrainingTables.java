@@ -6,7 +6,7 @@ public class TrainingTables  {
 
    		// TODO Auto-generated method stub
 		 DialogTT md=new DialogTT();
-	     md.setBounds(260, 120, 300, 400);
+	     md.setBounds(260, 120, 300, 430);
 	     md.setVisible(true);
 	}
 }

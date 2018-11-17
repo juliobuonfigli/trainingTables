@@ -17,13 +17,13 @@ import com.opencsv.*;
 
 public class DialogTT extends JFrame implements ActionListener, ChangeListener {
 
-  private JTextField  cSemilla, cEntradas, cSalidas, cPorcentaje, cFilas, cInicio, cFin, cColumna, cColumnas;
-  private JLabel eSemilla, eFuente, eDestino, eEntradas, eSalidas, ePorcentaje, eFilas, eInicio, eFin, eColumna, eColumnas, et1, et2;
-  private int Semilla, Entradas, Salidas, Filas, Inicio, Fin, Columna, Columnas;
+  private JTextField  cSemilla, cEntradas, cSalidas, cPorcentaje, cFilas, cInicio, cFin, cColumna, cColumnav, cColumnas;
+  private JLabel eSemilla, eFuente, eDestino, eEntradas, eSalidas, ePorcentaje, eFilas, eInicio, eFin, eColumna, eColumnav, eColumnas, et1, et2;
+  private int Semilla, Entradas, Salidas, Filas, Inicio, Fin, Columna, Columnav, Columnas;
   private double  Porcentaje;
   private JButton bFuente, bDestino, bAceptar;
-  private JCheckBox cbLoga, cbNormT, cbNormI, cbPvc;
-  private boolean Loga, NormT, NormI, Pvc;
+  private JCheckBox cbLoga, cbNormT, cbNormI, cbPvc, cbNeg;
+  private boolean Loga, NormT, NormI, Pvc, Neg;
   private File fF, fD;
   private Reader rF;
   private Writer wD;
@@ -69,56 +69,65 @@ public DialogTT()
         eFin=new JLabel("Fila de Finalización: ");
         eFin.setBounds(10,150,140,15);
         add(eFin);
-        eColumna=new JLabel("Usar columna n°: ");
-        eColumna.setBounds(10,170,100,15);
+        eColumna=new JLabel("Columna de precio: ");
+        eColumna.setBounds(10,170,140,15);
         add(eColumna);
+        eColumnav=new JLabel("Columna de volumen: ");
+        eColumnav.setBounds(10,190,140,15);
+        add(eColumnav);
         eColumnas=new JLabel("Número de columnas: ");
-        eColumnas.setBounds(10,190,140,15);
+        eColumnas.setBounds(10,210,140,15);
         add(eColumnas);
         eSemilla=new JLabel("Semilla: ");
-        eSemilla.setBounds(10,210,140,15);
+        eSemilla.setBounds(10,230,140,15);
         add(eSemilla);
         // Campos de texto
-        cEntradas=new JTextField("10");
+        cEntradas=new JTextField("7");
         cEntradas.setBounds(160,50,100,15);
         add(cEntradas);
-        cSalidas=new JTextField("5");
+        cSalidas=new JTextField("1");
         cSalidas.setBounds(160,70,100,15);
         add(cSalidas);
-        cPorcentaje=new JTextField("20");
+        cPorcentaje=new JTextField("5");
         cPorcentaje.setBounds(160,90,100,15);
         add(cPorcentaje);
-        cFilas=new JTextField("20");
+        cFilas=new JTextField("200");
         cFilas.setBounds(160,110,100,15);
         add(cFilas);
-        cInicio=new JTextField("20");
+        cInicio=new JTextField("7000");
         cInicio.setBounds(160,130,100,15);
         add(cInicio);
-        cFin=new JTextField("200");
+        cFin=new JTextField("7600");
         cFin.setBounds(160,150,100,15);
         add(cFin);
-        cColumna=new JTextField("3");
+        cColumna=new JTextField("6");
         cColumna.setBounds(160,170,100,15);
         add(cColumna);
-        cColumnas=new JTextField("5");
-        cColumnas.setBounds(160,190,100,15);
+        cColumnav=new JTextField("7");
+        cColumnav.setBounds(160,190,100,15);
+        add(cColumnav);
+        cColumnas=new JTextField("8");
+        cColumnas.setBounds(160,210,100,15);
         add(cColumnas);
-        cSemilla=new JTextField("20");
-        cSemilla.setBounds(160,210,100,15);
+        cSemilla=new JTextField("1");
+        cSemilla.setBounds(160,230,100,15);
         add(cSemilla);
         //CheckBoxes
         cbLoga=new JCheckBox("Logaritmizar");
-        cbLoga.setBounds(10, 240, 200, 15);
+        cbLoga.setBounds(10, 260, 200, 15);
         cbLoga.addChangeListener(this); add(cbLoga);
         cbNormT=new JCheckBox("Normalizar todo");
-        cbNormT.setBounds(10, 260, 200, 15);
+        cbNormT.setBounds(10, 280, 200, 15);
         cbNormT.addChangeListener(this); add(cbNormT);
         cbNormI=new JCheckBox("Normalizar cada entrada");
-        cbNormI.setBounds(10, 280, 200, 15);
+        cbNormI.setBounds(10, 300, 200, 15);
         cbNormI.addChangeListener(this); add(cbNormI);
         cbPvc=new JCheckBox("Porcentaje constante");
-        cbPvc.setBounds(10, 300, 200, 15);
+        cbPvc.setBounds(10, 320, 200, 15);
         cbPvc.addChangeListener(this); add(cbPvc);
+        cbNeg=new JCheckBox("Salida ternaria");
+        cbNeg.setBounds(10, 340, 200, 15);
+        cbNeg.addChangeListener(this); add(cbNeg);
         // Botones
         bFuente=new JButton("Buscar");
         bFuente.setBounds(160,10,90,15);
@@ -129,7 +138,7 @@ public DialogTT()
         add(bDestino);
         bDestino.addActionListener(this);
         bAceptar=new JButton("Aceptar");
-        bAceptar.setBounds(10,330,90,15);
+        bAceptar.setBounds(10,370,90,15);
         add(bAceptar);
         bAceptar.addActionListener(this);
 		}
@@ -176,6 +185,7 @@ public void stateChanged(ChangeEvent ce)
 	  NormT=cbNormT.isSelected(); 
 	  NormI=cbNormI.isSelected();
 	  Pvc=cbPvc.isSelected();
+	  Neg=cbNeg.isSelected();
 	  }
 
 @Override
@@ -205,13 +215,16 @@ public void actionPerformed(ActionEvent e)
         	Filas=Integer.parseInt(cFilas.getText());
         	Inicio=Integer.parseInt(cInicio.getText());
         	Columna=Integer.parseInt(cColumna.getText());
+        	Columnav=Integer.parseInt(cColumnav.getText());
         	Fin=Integer.parseInt(cFin.getText());
         	Columnas=Integer.parseInt(cColumnas.getText());
         	Semilla=Integer.parseInt(cSemilla.getText());
-        	String[] M1=new String[Entradas+1];
+        	String[] M1=new String[Entradas+2];
         	String[] Mi=new String[Columnas];
         	double[] MD=new double[Fin-Inicio+1];
+        	double[] MDV=new double[Fin-Inicio+1];
         	double[] MD2=new double[Entradas+Salidas];
+        	double[] MDV2=new double[Entradas+Salidas];
         	rbF=new CSVReaderBuilder(rF);
         	rbF.withSkipLines(Inicio-1);
         	crF=rbF.build();
@@ -224,6 +237,7 @@ public void actionPerformed(ActionEvent e)
         		catch(IOException c) {
         			System.out.println(c.getMessage()); }
         		MD[j]=Double.parseDouble(Mi[Columna-1]);
+        		MDV[j]=Double.parseDouble(Mi[Columnav-1]);
         		}
         	try{
     			crF.close();}
@@ -232,11 +246,17 @@ public void actionPerformed(ActionEvent e)
         	if(Loga==true)
         		{
         		for(int i=0; i<Fin-Inicio; i++)
+        			{
         			MD[i]=Math.log(MD[i]);
-        	   	}
+        			MDV[i]=Math.log(MDV[i]);
+        			}
+        		}
         	if(NormT==true)
+        		{
         		MD=norm(MD);
-        	double sal, comp;
+        		MDV=norm(MDV);
+        		}
+        	double sal, comp, comp2;
         	cwD=new CSVWriter(wD);
         	for(int j=0; j<Filas; j++)
         		{
@@ -244,23 +264,41 @@ public void actionPerformed(ActionEvent e)
         		for(int k=0; k<Entradas+Salidas; k++)
         			{
         			MD2[k]=MD[in];
+        			MDV2[k]=MDV[in];
         			in++;
         			}
         		if(NormI==true)
-            		MD2=norm(MD2);
+        			{
+        			MD2=norm(MD2);
+        			MDV2=norm(MDV2);
+        			}
         		sal=0.0;
-        		if(Pvc==true)
+        		/*if(Pvc==true)
+        			{
         			comp=MD2[Entradas-1]+(Porcentaje/100);
+        			comp2=MD2[Entradas-1]-(Porcentaje/100);
+        			}
         		else
+        			{
         			comp=MD2[Entradas-1]*(1+Porcentaje/100);
+        			comp2=MD2[Entradas-1]*(1-Porcentaje/100);
+        			}
         		for(int l=Entradas; l<Entradas+Salidas; l++)
         			{
         			if(MD2[l]>comp)
         				sal=1.0;
-        			}
+        			else if(MD2[l]<comp2 && Neg==true)
+        				sal=-1.0;
+        			}*/
+        		for(int l=Entradas; l<Entradas+Salidas; l++)
+        			sal=MD2[l];
         		for(int k=0; k<Entradas; k++)
         			M1[k]=Double.toString(MD2[k]);
-        		M1[Entradas]=Double.toString(sal);
+        		double prom=0;
+        		for(int s=0; s<Entradas-1; s++)
+        			prom=prom+MDV2[s];
+        		M1[Entradas]=Double.toString(MDV2[Entradas-1]/(prom/(Entradas-1)));
+        		M1[Entradas+1]=Double.toString(sal);
         		try {
         			cwD.writeNext(M1); }
 	    		catch(Exception ee) {
